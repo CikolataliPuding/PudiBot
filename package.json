@@ -1,0 +1,19 @@
+{
+  "name": "pudibot",
+  "version": "1.0.0",
+  "description": "Basit Bir Discord Moderasyon Botu",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": ["discord", "bot"],
+  "author": "PudiBot",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+} 
