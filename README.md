@@ -208,4 +208,4 @@ Sorularınız için GitHub Issues kullanabilirsiniz.
 
 ---
 
-**PudiBot v2.1** - Gelişmiş Discord Moderasyon Sistemi 
+**PudiBot v1** - Discord Moderasyon Sistemi 
