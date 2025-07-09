@@ -88,6 +88,8 @@ module.exports = {
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'unban', successEmbed);
 
+
+
         } catch (error) {
             console.error('Unban hatası:', error);
             const errorEmbed = new EmbedBuilder()

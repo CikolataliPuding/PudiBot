@@ -125,6 +125,8 @@ module.exports = {
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'kick', successEmbed);
 
+
+
         } catch (error) {
             console.error('Kick hatası:', error);
             const errorEmbed = new EmbedBuilder()

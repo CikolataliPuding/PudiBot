@@ -95,6 +95,8 @@ module.exports = {
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'unmute', successEmbed);
 
+
+
         } catch (error) {
             console.error('Unmute hatası:', error);
             const errorEmbed = new EmbedBuilder()

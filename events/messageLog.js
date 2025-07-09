@@ -1,5 +1,43 @@
 const { EmbedBuilder } = require('discord.js');
 const { loadLogChannels } = require('../utils/logHelper');
+const fs = require('fs');
+const path = require('path');
+
+// Muaf kanalları saklamak için dosya yolu
+const exemptChannelsPath = path.join(__dirname, '..', 'data', 'exemptChannels.json');
+
+// Muaf kanalları yükle
+function loadExemptChannels() {
+    try {
+        if (fs.existsSync(exemptChannelsPath)) {
+            const data = fs.readFileSync(exemptChannelsPath, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Muaf kanallar yüklenirken hata:', error);
+    }
+    return {};
+}
+
+// Muaf kanalları kaydet
+function saveExemptChannels(exemptChannels) {
+    try {
+        const dataDir = path.dirname(exemptChannelsPath);
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(exemptChannelsPath, JSON.stringify(exemptChannels, null, 2));
+    } catch (error) {
+        console.error('Muaf kanallar kaydedilirken hata:', error);
+    }
+}
+
+// Kanal muaf mı kontrol et
+function isChannelExempt(guildId, channelId) {
+    const exemptChannels = loadExemptChannels();
+    return exemptChannels[guildId]?.includes(channelId) || false;
+}
 
 // Mesaj log kanalına gönder
 async function sendToMessageLog(guild, embed) {
@@ -40,6 +78,9 @@ module.exports = {
         messageDelete: async (message) => {
             if (message.author?.bot) return;
             
+            // Kanal muaf mı kontrol et
+            if (isChannelExempt(message.guild.id, message.channel.id)) return;
+            
             const embed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('🗑️ Mesaj Silindi')
@@ -60,6 +101,9 @@ module.exports = {
         messageUpdate: async (oldMessage, newMessage) => {
             if (oldMessage.author?.bot) return;
             if (oldMessage.content === newMessage.content) return;
+            
+            // Kanal muaf mı kontrol et
+            if (isChannelExempt(oldMessage.guild.id, oldMessage.channel.id)) return;
 
             const embed = new EmbedBuilder()
                 .setColor('#ffff00')
@@ -80,18 +124,29 @@ module.exports = {
 
         // Toplu mesaj silindiğinde
         messageDeleteBulk: async (messages) => {
+            const firstMessage = messages.first();
+            if (!firstMessage) return;
+            
+            // Kanal muaf mı kontrol et
+            if (isChannelExempt(firstMessage.guild.id, firstMessage.channel.id)) return;
+            
             const embed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('🗑️ Toplu Mesaj Silindi')
                 .addFields(
-                    { name: '📝 Kanal', value: `${messages.first()?.channel}`, inline: true },
+                    { name: '📝 Kanal', value: `${firstMessage.channel}`, inline: true },
                     { name: '📊 Silinen Mesaj', value: `${messages.size}`, inline: true },
                     { name: '📅 Tarih', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true }
                 )
                 .setFooter({ text: 'Toplu silme işlemi' })
                 .setTimestamp();
 
-            await sendToMessageLog(messages.first()?.guild, embed);
+            await sendToMessageLog(firstMessage.guild, embed);
         }
-    }
+    },
+    
+    // Muaf kanal yönetimi fonksiyonları
+    loadExemptChannels,
+    saveExemptChannels,
+    isChannelExempt
 }; 

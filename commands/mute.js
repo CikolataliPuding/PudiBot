@@ -46,7 +46,7 @@ module.exports = {
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('❌ Kullanıcı Bulunamadı')
-                .setDescription('Lütfen mute edilecek kullanıcıyı etiketleyin!')
+                .setDescription('Lütfen susturulacak kullanıcıyı etiketleyin!')
                 .setTimestamp();
             return message.reply({ embeds: [errorEmbed] });
         }
@@ -66,7 +66,7 @@ module.exports = {
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('❌ Hata')
-                .setDescription('Kendinizi mute edemezsiniz!')
+                .setDescription('Kendinizi susturamazsınız!')
                 .setTimestamp();
             return message.reply({ embeds: [errorEmbed] });
         }
@@ -76,7 +76,7 @@ module.exports = {
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('❌ Hata')
-                .setDescription('Bot\'u mute edemezsiniz!')
+                .setDescription('Bot\'u susturamazsınız!')
                 .setTimestamp();
             return message.reply({ embeds: [errorEmbed] });
         }
@@ -127,11 +127,11 @@ module.exports = {
             // Başarı embed'i
             const successEmbed = new EmbedBuilder()
                 .setColor('#00ff00')
-                .setTitle('🔇 Kullanıcı Mute Edildi')
+                .setTitle('🔇 Kullanıcı Susturuldu')
                 .setThumbnail('https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif')
                 .addFields(
-                    { name: '👤 Mute Edilen', value: `${targetUser} (${targetUser.id})`, inline: true },
-                    { name: '🛡️ Mute Eden', value: `${message.author} (${message.author.id})`, inline: true },
+                    { name: '👤 Susturulan', value: `${targetUser} (${targetUser.id})`, inline: true },
+                    { name: '🛡️ Yetkili', value: `${message.author} (${message.author.id})`, inline: true },
                     { name: '⏰ Süre', value: `${timeValue}${timeUnit}`, inline: true },
                     { name: '📝 Sebep', value: reason, inline: false }
                 )
@@ -143,12 +143,33 @@ module.exports = {
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'mute', successEmbed);
 
+
+
+            // Kullanıcıya DM gönder
+            try {
+                const dmEmbed = new EmbedBuilder()
+                    .setColor('#ff9900')
+                    .setTitle('🔇 Susturuldunuz')
+                    .setDescription(`${message.guild.name} sunucusunda Susturuldunuz.`)
+                    .addFields(
+                        { name: '🛡️ Mute Eden', value: `${message.author.tag}`, inline: true },
+                        { name: '⏰ Süre', value: `${timeValue}${timeUnit}`, inline: true },
+                        { name: '📝 Sebep', value: reason, inline: false }
+                    )
+                    .setFooter({ text: `Sunucu: ${message.guild.name}` })
+                    .setTimestamp();
+
+                await targetUser.send({ embeds: [dmEmbed] });
+            } catch (dmError) {
+                console.log(`${targetUser.tag} kullanıcısına DM gönderilemedi: ${dmError.message}`);
+            }
+
         } catch (error) {
             console.error('Mute hatası:', error);
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('❌ Mute Hatası')
-                .setDescription('Kullanıcı mute edilirken bir hata oluştu!')
+                .setDescription('Kullanıcı susturulurken bir hata oluştu!')
                 .addFields(
                     { name: 'Hata Detayı', value: error.message, inline: false }
                 )

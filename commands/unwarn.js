@@ -157,6 +157,8 @@ module.exports = {
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'unwarn', successEmbed);
 
+
+
         } catch (error) {
             console.error('Unwarn hatası:', error);
             const errorEmbed = new EmbedBuilder()

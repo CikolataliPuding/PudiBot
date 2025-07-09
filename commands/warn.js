@@ -156,6 +156,27 @@ module.exports = {
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'warn', successEmbed);
 
+
+
+            // Kullanıcıya DM gönder
+            try {
+                const dmEmbed = new EmbedBuilder()
+                    .setColor('#ffff00')
+                    .setTitle('⚠️ Uyarı Aldınız')
+                    .setDescription(`${message.guild.name} sunucusunda uyarı aldınız.`)
+                    .addFields(
+                        { name: '🛡️ Uyaran', value: `${message.author.tag}`, inline: true },
+                        { name: '📊 Toplam Uyarı', value: `${totalWarnings}`, inline: true },
+                        { name: '📝 Sebep', value: reason, inline: false }
+                    )
+                    .setFooter({ text: `Sunucu: ${message.guild.name}` })
+                    .setTimestamp();
+
+                await targetUser.send({ embeds: [dmEmbed] });
+            } catch (dmError) {
+                console.log(`${targetUser.tag} kullanıcısına DM gönderilemedi: ${dmError.message}`);
+            }
+
         } catch (error) {
             console.error('Warn hatası:', error);
             const errorEmbed = new EmbedBuilder()

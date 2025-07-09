@@ -125,6 +125,8 @@ module.exports = {
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'ban', successEmbed);
 
+
+
         } catch (error) {
             console.error('Ban hatası:', error);
             const errorEmbed = new EmbedBuilder()

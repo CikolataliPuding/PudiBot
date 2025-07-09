@@ -137,9 +137,9 @@ client.on('messageCreate', async message => {
                         { name: '✅ Unwarn', value: '`!unwarn <@kullanıcı> <uyarı_id> <sebep>` - Uyarıyı kaldır', inline: true },
                         { name: '📋 Sicil', value: '`!sicil <@kullanıcı>` - Kullanıcının sicilini göster', inline: true },
                         { name: '🧹 Temizle', value: '`!temizle <sayı> [@kullanıcı]` - Mesaj sil', inline: true },
-                        { name: '📝 Log Ayarları', value: '`!mutelog <#kanal>` - Mute log kanalı\n`!banlog <#kanal>` - Ban log kanalı\n`!warnlog <#kanal>` - Warn log kanalı\n`!mesajlog <#kanal>` - Mesaj log kanalı', inline: false }
+                        { name: '📝 Log Ayarları', value: '`!mutelog <#kanal>` - Mute log kanalı\n`!banlog <#kanal>` - Ban log kanalı\n`!warnlog <#kanal>` - Warn log kanalı\n`!mesajlog ayarla <#kanal>` - Mesaj log kanalı\n`!mesajlog muaf-ekle <#kanal>` - Kanalı muaf listesine ekle\n`!mesajlog muaf-kaldir <#kanal>` - Kanalı muaf listesinden kaldır\n`!mesajlog muaf-listesi` - Muaf kanalları listele\n`!gelengidenlog gelen <#kanal>` - Gelen log kanalı\n`!gelengidenlog giden <#kanal>` - Giden log kanalı', inline: false }
                     )
-                    .setFooter({ text: 'PudiBot v2.1 - Gelişmiş Moderasyon Sistemi' })
+                    .setFooter({ text: 'PudiBot v1 - Temel Moderasyon Sistemi' })
                     .setTimestamp();
                 await message.reply({ embeds: [helpEmbed] });
                 break;

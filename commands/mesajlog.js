@@ -1,10 +1,11 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { loadLogChannels, saveLogChannels } = require('../utils/logHelper');
+const messageLogModule = require('../events/messageLog');
 
 module.exports = {
     name: 'mesajlog',
-    description: 'Mesaj log kanalını ayarlar',
-    usage: '!mesajlog <#kanal>',
+    description: 'Mesaj log kanalını ve muaf kanalları ayarlar',
+    usage: '!mesajlog <ayarla|muaf-ekle|muaf-kaldir|muaf-listesi> [#kanal]',
     async execute(message, args) {
         // Yetki kontrolü
         if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
@@ -21,71 +22,191 @@ module.exports = {
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('❌ Kullanım Hatası')
-                .setDescription('Doğru kullanım: `!mesajlog <#kanal>`')
+                .setDescription('Doğru kullanım: `!mesajlog <ayarla|muaf-ekle|muaf-kaldir|muaf-listesi> [#kanal]`')
                 .addFields(
-                    { name: 'Örnek', value: '`!mesajlog #mesaj-log`', inline: true }
+                    { name: 'Komutlar', value: '`ayarla` - Mesaj log kanalını ayarla\n`muaf-ekle` - Kanalı muaf listesine ekle\n`muaf-kaldir` - Kanalı muaf listesinden kaldır\n`muaf-listesi` - Muaf kanalları listele', inline: false }
                 )
                 .setTimestamp();
             return message.reply({ embeds: [errorEmbed] });
         }
 
-        // Kanalı al
-        const channel = message.mentions.channels.first();
-        if (!channel) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setTitle('❌ Kanal Bulunamadı')
-                .setDescription('Lütfen geçerli bir kanal etiketleyin!')
-                .setTimestamp();
-            return message.reply({ embeds: [errorEmbed] });
-        }
-
-        // Kanalın yazma yetkisi var mı kontrol et
-        if (!channel.permissionsFor(message.guild.members.me).has('SendMessages')) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setTitle('❌ Bot Yetkisi Hatası')
-                .setDescription('Bot\'un bu kanala mesaj gönderme yetkisi yok!')
-                .setTimestamp();
-            return message.reply({ embeds: [errorEmbed] });
-        }
+        const action = args[0].toLowerCase();
 
         try {
-            // Log kanallarını yükle
-            const logChannels = loadLogChannels();
-            
-            // Sunucu ID'si yoksa oluştur
-            if (!logChannels[message.guild.id]) {
-                logChannels[message.guild.id] = {};
+            switch (action) {
+                case 'ayarla':
+                    if (args.length < 2) {
+                        const errorEmbed = new EmbedBuilder()
+                            .setColor('#ff0000')
+                            .setTitle('❌ Kullanım Hatası')
+                            .setDescription('Doğru kullanım: `!mesajlog ayarla #kanal`')
+                            .setTimestamp();
+                        return message.reply({ embeds: [errorEmbed] });
+                    }
+
+                    const channel = message.mentions.channels.first();
+                    if (!channel) {
+                        const errorEmbed = new EmbedBuilder()
+                            .setColor('#ff0000')
+                            .setTitle('❌ Kanal Bulunamadı')
+                            .setDescription('Lütfen bir kanal etiketleyin!')
+                            .setTimestamp();
+                        return message.reply({ embeds: [errorEmbed] });
+                    }
+
+                    const logChannels = loadLogChannels();
+                    if (!logChannels[message.guild.id]) {
+                        logChannels[message.guild.id] = {};
+                    }
+                    logChannels[message.guild.id].message = channel.id;
+                    saveLogChannels(logChannels);
+
+                    const successEmbed = new EmbedBuilder()
+                        .setColor('#00ff00')
+                        .setTitle('✅ Mesaj Log Kanalı Ayarlandı')
+                        .addFields(
+                            { name: '📺 Kanal', value: `${channel}`, inline: true }
+                        )
+                        .setTimestamp();
+
+                    await message.reply({ embeds: [successEmbed] });
+                    break;
+
+                case 'muaf-ekle':
+                    if (args.length < 2) {
+                        const errorEmbed = new EmbedBuilder()
+                            .setColor('#ff0000')
+                            .setTitle('❌ Kullanım Hatası')
+                            .setDescription('Doğru kullanım: `!mesajlog muaf-ekle #kanal`')
+                            .setTimestamp();
+                        return message.reply({ embeds: [errorEmbed] });
+                    }
+
+                    const exemptChannel = message.mentions.channels.first();
+                    if (!exemptChannel) {
+                        const errorEmbed = new EmbedBuilder()
+                            .setColor('#ff0000')
+                            .setTitle('❌ Kanal Bulunamadı')
+                            .setDescription('Lütfen bir kanal etiketleyin!')
+                            .setTimestamp();
+                        return message.reply({ embeds: [errorEmbed] });
+                    }
+
+                    const exemptChannels = messageLogModule.loadExemptChannels();
+                    if (!exemptChannels[message.guild.id]) {
+                        exemptChannels[message.guild.id] = [];
+                    }
+                    
+                    if (!exemptChannels[message.guild.id].includes(exemptChannel.id)) {
+                        exemptChannels[message.guild.id].push(exemptChannel.id);
+                        messageLogModule.saveExemptChannels(exemptChannels);
+
+                        const successEmbed = new EmbedBuilder()
+                            .setColor('#00ff00')
+                            .setTitle('✅ Kanal Muaf Listesine Eklendi')
+                            .addFields(
+                                { name: '📺 Kanal', value: `${exemptChannel}`, inline: true }
+                            )
+                            .setTimestamp();
+
+                        await message.reply({ embeds: [successEmbed] });
+                    } else {
+                        const errorEmbed = new EmbedBuilder()
+                            .setColor('#ff9900')
+                            .setTitle('⚠️ Kanal Zaten Muaf')
+                            .setDescription('Bu kanal zaten muaf listesinde!')
+                            .setTimestamp();
+                        await message.reply({ embeds: [errorEmbed] });
+                    }
+                    break;
+
+                case 'muaf-kaldir':
+                    if (args.length < 2) {
+                        const errorEmbed = new EmbedBuilder()
+                            .setColor('#ff0000')
+                            .setTitle('❌ Kullanım Hatası')
+                            .setDescription('Doğru kullanım: `!mesajlog muaf-kaldir #kanal`')
+                            .setTimestamp();
+                        return message.reply({ embeds: [errorEmbed] });
+                    }
+
+                    const removeChannel = message.mentions.channels.first();
+                    if (!removeChannel) {
+                        const errorEmbed = new EmbedBuilder()
+                            .setColor('#ff0000')
+                            .setTitle('❌ Kanal Bulunamadı')
+                            .setDescription('Lütfen bir kanal etiketleyin!')
+                            .setTimestamp();
+                        return message.reply({ embeds: [errorEmbed] });
+                    }
+
+                    const removeExemptChannels = messageLogModule.loadExemptChannels();
+                    if (removeExemptChannels[message.guild.id]?.includes(removeChannel.id)) {
+                        removeExemptChannels[message.guild.id] = removeExemptChannels[message.guild.id].filter(id => id !== removeChannel.id);
+                        messageLogModule.saveExemptChannels(removeExemptChannels);
+
+                        const successEmbed = new EmbedBuilder()
+                            .setColor('#00ff00')
+                            .setTitle('✅ Kanal Muaf Listesinden Kaldırıldı')
+                            .addFields(
+                                { name: '📺 Kanal', value: `${removeChannel}`, inline: true }
+                            )
+                            .setTimestamp();
+
+                        await message.reply({ embeds: [successEmbed] });
+                    } else {
+                        const errorEmbed = new EmbedBuilder()
+                            .setColor('#ff9900')
+                            .setTitle('⚠️ Kanal Muaf Değil')
+                            .setDescription('Bu kanal muaf listesinde değil!')
+                            .setTimestamp();
+                        await message.reply({ embeds: [errorEmbed] });
+                    }
+                    break;
+
+                case 'muaf-listesi':
+                    const listExemptChannels = messageLogModule.loadExemptChannels();
+                    const guildExemptChannels = listExemptChannels[message.guild.id] || [];
+
+                    if (guildExemptChannels.length === 0) {
+                        const noExemptEmbed = new EmbedBuilder()
+                            .setColor('#0099ff')
+                            .setTitle('📋 Muaf Kanal Listesi')
+                            .setDescription('Bu sunucuda muaf kanal bulunmuyor.')
+                            .setTimestamp();
+                        await message.reply({ embeds: [noExemptEmbed] });
+                    } else {
+                        const channelList = guildExemptChannels.map(channelId => {
+                            const channel = message.guild.channels.cache.get(channelId);
+                            return channel ? `${channel} (${channelId})` : `Bilinmeyen Kanal (${channelId})`;
+                        }).join('\n');
+
+                        const listEmbed = new EmbedBuilder()
+                            .setColor('#0099ff')
+                            .setTitle('📋 Muaf Kanal Listesi')
+                            .setDescription(channelList)
+                            .setFooter({ text: `Toplam: ${guildExemptChannels.length} kanal` })
+                            .setTimestamp();
+
+                        await message.reply({ embeds: [listEmbed] });
+                    }
+                    break;
+
+                default:
+                    const errorEmbed = new EmbedBuilder()
+                        .setColor('#ff0000')
+                        .setTitle('❌ Geçersiz Komut')
+                        .setDescription('Geçerli komutlar: `ayarla`, `muaf-ekle`, `muaf-kaldir`, `muaf-listesi`')
+                        .setTimestamp();
+                    await message.reply({ embeds: [errorEmbed] });
+                    break;
             }
-
-            // Mesaj log kanalını ayarla
-            logChannels[message.guild.id].message = channel.id;
-            
-            // Log kanallarını kaydet
-            saveLogChannels(logChannels);
-
-            // Başarı embed'i
-            const successEmbed = new EmbedBuilder()
-                .setColor('#00ff00')
-                .setTitle('✅ Mesaj Log Kanalı Ayarlandı')
-                .setThumbnail('https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif')
-                .addFields(
-                    { name: '📝 Kanal', value: `${channel}`, inline: true },
-                    { name: '🛡️ Ayalayan', value: `${message.author}`, inline: true },
-                    { name: '📊 Kanal ID', value: channel.id, inline: true }
-                )
-                .setFooter({ text: 'Artık mesaj değişiklikleri bu kanala loglanacak' })
-                .setTimestamp();
-
-            await message.reply({ embeds: [successEmbed] });
-
         } catch (error) {
             console.error('Mesaj log ayarlama hatası:', error);
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
-                .setTitle('❌ Ayar Hatası')
-                .setDescription('Mesaj log kanalı ayarlanırken bir hata oluştu!')
+                .setTitle('❌ Mesaj Log Hatası')
+                .setDescription('İşlem sırasında bir hata oluştu!')
                 .addFields(
                     { name: 'Hata Detayı', value: error.message, inline: false }
                 )
