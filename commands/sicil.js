@@ -1,22 +1,5 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-// Uyarıları saklamak için dosya yolu
-const warningsPath = path.join(__dirname, '..', 'data', 'warnings.json');
-
-// Uyarıları yükle
-function loadWarnings() {
-    try {
-        if (fs.existsSync(warningsPath)) {
-            const data = fs.readFileSync(warningsPath, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (error) {
-        console.error('Uyarılar yüklenirken hata:', error);
-    }
-    return {};
-}
+const { getWarnings } = require('../utils/database');
 
 module.exports = {
     name: 'sicil',
@@ -58,11 +41,8 @@ module.exports = {
         }
 
         try {
-            // Uyarıları yükle
-            const warnings = loadWarnings();
-            
-            // Kullanıcının uyarılarını al
-            const userWarnings = warnings[message.guild.id]?.[targetUser.id] || [];
+            // Kullanıcının uyarılarını MongoDB'den al
+            const userWarnings = await getWarnings(message.guild.id, targetUser.id);
             
             // Ban geçmişini kontrol et (Discord API'den)
             let banHistory = [];

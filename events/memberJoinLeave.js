@@ -1,13 +1,12 @@
 const { EmbedBuilder } = require('discord.js');
-const { loadLogChannels, sendToLogChannel } = require('../utils/logHelper');
+const { getLogChannel } = require('../utils/database');
 
 module.exports = {
     events: {
         // Kullanıcı sunucuya katıldığında
         guildMemberAdd: async (member) => {
             try {
-                const logChannels = loadLogChannels();
-                const joinLogChannelId = logChannels[member.guild.id]?.joinLog;
+                const joinLogChannelId = await getLogChannel(member.guild.id, 'joinLog');
                 
                 if (joinLogChannelId) {
                     const logChannel = member.guild.channels.cache.get(joinLogChannelId);
@@ -37,8 +36,7 @@ module.exports = {
         // Kullanıcı sunucudan ayrıldığında
         guildMemberRemove: async (member) => {
             try {
-                const logChannels = loadLogChannels();
-                const leaveLogChannelId = logChannels[member.guild.id]?.leaveLog;
+                const leaveLogChannelId = await getLogChannel(member.guild.id, 'leaveLog');
                 
                 if (leaveLogChannelId) {
                     const logChannel = member.guild.channels.cache.get(leaveLogChannelId);

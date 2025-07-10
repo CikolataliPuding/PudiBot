@@ -1,5 +1,5 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { loadLogChannels, saveLogChannels } = require('../utils/logHelper');
+const { setLogChannel } = require('../utils/database');
 
 module.exports = {
     name: 'mutelog',
@@ -51,19 +51,12 @@ module.exports = {
         }
 
         try {
-            // Log kanallarını yükle
-            const logChannels = loadLogChannels();
+            // MongoDB'ye mute log kanalını kaydet
+            const success = await setLogChannel(message.guild.id, 'mute', channel.id);
             
-            // Sunucu ID'si yoksa oluştur
-            if (!logChannels[message.guild.id]) {
-                logChannels[message.guild.id] = {};
+            if (!success) {
+                throw new Error('Log kanalı veritabanına kaydedilemedi');
             }
-
-            // Mute log kanalını ayarla
-            logChannels[message.guild.id].mute = channel.id;
-            
-            // Log kanallarını kaydet
-            saveLogChannels(logChannels);
 
             // Başarı embed'i
             const successEmbed = new EmbedBuilder()

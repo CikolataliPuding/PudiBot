@@ -11,7 +11,8 @@
   "author": "PudiBot",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "discord.js": "^14.14.1",
+    "mongodb": "^6.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

@@ -1,38 +1,6 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { sendToLogChannel } = require('../utils/logHelper');
-const fs = require('fs');
-const path = require('path');
-
-// Uyarıları saklamak için dosya yolu
-const warningsPath = path.join(__dirname, '..', 'data', 'warnings.json');
-
-// Uyarıları yükle
-function loadWarnings() {
-    try {
-        if (fs.existsSync(warningsPath)) {
-            const data = fs.readFileSync(warningsPath, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (error) {
-        console.error('Uyarılar yüklenirken hata:', error);
-    }
-    return {};
-}
-
-// Uyarıları kaydet
-function saveWarnings(warnings) {
-    try {
-        // data klasörünü oluştur
-        const dataDir = path.dirname(warningsPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
-        
-        fs.writeFileSync(warningsPath, JSON.stringify(warnings, null, 2));
-    } catch (error) {
-        console.error('Uyarılar kaydedilirken hata:', error);
-    }
-}
+const { addWarning, getWarnings } = require('../utils/database');
 
 module.exports = {
     name: 'warn',
@@ -107,20 +75,7 @@ module.exports = {
         const reason = args.slice(1).join(' ') || 'Sebep belirtilmedi';
 
         try {
-            // Uyarıları yükle
-            const warnings = loadWarnings();
-            
-            // Sunucu ID'si yoksa oluştur
-            if (!warnings[message.guild.id]) {
-                warnings[message.guild.id] = {};
-            }
-            
-            // Kullanıcı ID'si yoksa oluştur
-            if (!warnings[message.guild.id][targetUser.id]) {
-                warnings[message.guild.id][targetUser.id] = [];
-            }
-
-            // Yeni uyarı ekle
+            // Yeni uyarı oluştur
             const newWarning = {
                 reason: reason,
                 moderator: message.author.id,
@@ -129,13 +84,16 @@ module.exports = {
                 warningId: Date.now().toString()
             };
 
-            warnings[message.guild.id][targetUser.id].push(newWarning);
+            // MongoDB'ye uyarı ekle
+            const success = await addWarning(message.guild.id, targetUser.id, newWarning);
             
-            // Uyarıları kaydet
-            saveWarnings(warnings);
+            if (!success) {
+                throw new Error('Uyarı veritabanına eklenemedi');
+            }
 
-            // Toplam uyarı sayısı
-            const totalWarnings = warnings[message.guild.id][targetUser.id].length;
+            // Mevcut uyarıları getir
+            const warnings = await getWarnings(message.guild.id, targetUser.id);
+            const totalWarnings = warnings.length;
 
             // Başarı embed'i
             const successEmbed = new EmbedBuilder()
@@ -155,8 +113,6 @@ module.exports = {
 
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'warn', successEmbed);
-
-
 
             // Kullanıcıya DM gönder
             try {

@@ -1,42 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-
-// Log kanallarını saklamak için dosya yolu
-const logChannelsPath = path.join(__dirname, '..', 'data', 'logchannels.json');
-
-// Log kanallarını yükle
-function loadLogChannels() {
-    try {
-        if (fs.existsSync(logChannelsPath)) {
-            const data = fs.readFileSync(logChannelsPath, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (error) {
-        console.error('Log kanalları yüklenirken hata:', error);
-    }
-    return {};
-}
-
-// Log kanallarını kaydet
-function saveLogChannels(logChannels) {
-    try {
-        // data klasörünü oluştur
-        const dataDir = path.dirname(logChannelsPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
-        
-        fs.writeFileSync(logChannelsPath, JSON.stringify(logChannels, null, 2));
-    } catch (error) {
-        console.error('Log kanalları kaydedilirken hata:', error);
-    }
-}
+const { getLogChannel, getAllLogChannels } = require('./database');
 
 // Belirli bir log kanalına gönder
 async function sendToLogChannel(guild, action, embed) {
     try {
-        const logChannels = loadLogChannels();
-        const logChannelId = logChannels[guild.id]?.[action];
+        const logChannelId = await getLogChannel(guild.id, action);
         
         if (logChannelId) {
             const logChannel = guild.channels.cache.get(logChannelId);
@@ -62,6 +29,22 @@ async function sendToLogChannel(guild, action, embed) {
         console.error('Log kanalına gönderme hatası:', error);
         return false;
     }
+}
+
+// Tüm log kanallarını getir (geriye uyumluluk için)
+async function loadLogChannels() {
+    try {
+        return await getAllLogChannels();
+    } catch (error) {
+        console.error('Log kanalları yüklenirken hata:', error);
+        return {};
+    }
+}
+
+// Log kanallarını kaydet (geriye uyumluluk için - artık kullanılmıyor)
+function saveLogChannels(logChannels) {
+    console.warn('saveLogChannels fonksiyonu artık kullanılmıyor. MongoDB kullanılıyor.');
+    return true;
 }
 
 module.exports = {

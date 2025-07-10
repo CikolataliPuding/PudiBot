@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Collection, EmbedBuilder } = require('discord
 const { token } = require('./config.json');
 const fs = require('fs');
 const path = require('path');
+const { connectToDatabase, closeConnection } = require('./utils/database');
 
 // Bot client'ını oluştur
 const client = new Client({
@@ -15,6 +16,16 @@ const client = new Client({
 
 // Komutları saklamak için collection
 client.commands = new Collection();
+
+// MongoDB'ye bağlan
+async function initializeDatabase() {
+    try {
+        await connectToDatabase();
+    } catch (error) {
+        console.error('❌ Veritabanı başlatılamadı:', error);
+        process.exit(1);
+    }
+}
 
 // Komutları yükle
 function loadCommands() {
@@ -55,9 +66,13 @@ function loadEvents() {
 }
 
 // Bot hazır olduğunda
-client.once('ready', () => {
+client.once('ready', async () => {
     console.log(`🤖 ${client.user.tag} olarak giriş yapıldı!`);
     console.log(`📊 ${client.guilds.cache.size} sunucuda aktif`);
+    
+    // MongoDB'ye bağlan
+    await initializeDatabase();
+    
     console.log('🚀 Moderasyon komutları hazır!');
 });
 
@@ -171,6 +186,19 @@ client.on('messageCreate', async message => {
 // Hata yakalama
 client.on('error', error => {
     console.error('Bot hatası:', error);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('\n🔄 Bot kapatılıyor...');
+    await closeConnection();
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('\n🔄 Bot kapatılıyor...');
+    await closeConnection();
+    process.exit(0);
 });
 
 // Komutları ve event'leri yükle

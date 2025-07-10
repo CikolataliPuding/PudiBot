@@ -1,196 +1,185 @@
-# 🤖 PudiBot - Discord Moderasyon Botu
+# PudiBot - Discord Moderasyon Botu
 
-PudiBot, Discord sunucuları için gelişmiş moderasyon özellikleri sunan bir bot'tur. Prefix tabanlı komut sistemi ile kolay kullanım sağlar.
+PudiBot, Discord sunucuları için geliştirilmiş kapsamlı bir moderasyon botudur. MongoDB veritabanı kullanarak güvenilir ve ölçeklenebilir bir yapı sunar.
 
-## ✨ Özellikler
+## 🚀 Özellikler
 
-### 🔧 Temel Komutlar
+### Moderasyon Komutları
+- **Warn/Unwarn**: Kullanıcı uyarı sistemi
+- **Ban/Unban**: Kullanıcı yasaklama sistemi
+- **Kick**: Kullanıcı atma sistemi
+- **Mute/Unmute**: Kullanıcı susturma sistemi
+- **Temizle**: Toplu mesaj silme
+- **Sicil**: Kullanıcı moderasyon geçmişi
+
+### Log Sistemi
+- **Warn Log**: Uyarı işlemlerinin loglanması
+- **Ban Log**: Ban işlemlerinin loglanması
+- **Mute Log**: Mute işlemlerinin loglanması
+- **Mesaj Log**: Mesaj silme/düzenleme logları
+- **Gelen/Giden Log**: Üye katılma/ayrılma logları
+
+### Diğer Özellikler
+- **Profil**: Kullanıcı profil bilgileri
+- **Eğlence Komutları**: Zar, yazı tura, ping
+- **Sunucu Bilgileri**: Detaylı sunucu istatistikleri
+
+## 📋 Gereksinimler
+
+- Node.js 16.9.0 veya üzeri
+- MongoDB Atlas hesabı
+- Discord Bot Token
+
+## 🛠️ Kurulum
+
+### 1. Projeyi İndirin
+```bash
+git clone <repository-url>
+cd PudiBot
+```
+
+### 2. Bağımlılıkları Yükleyin
+```bash
+npm install
+```
+
+### 3. MongoDB Atlas Kurulumu
+1. [MongoDB Atlas](https://www.mongodb.com/atlas) hesabı oluşturun
+2. Yeni bir cluster oluşturun
+3. Database Access bölümünden bir kullanıcı oluşturun
+4. Network Access bölümünden IP adresinizi ekleyin (veya 0.0.0.0/0 ile tüm IP'lere izin verin)
+5. Clusters bölümünden "Connect" butonuna tıklayın ve "Connect your application" seçin
+6. Bağlantı URL'sini kopyalayın
+
+### 4. Konfigürasyon
+`config.json` dosyasını düzenleyin:
+
+```json
+{
+  "token": "YOUR_DISCORD_BOT_TOKEN_HERE",
+  "mongodb": {
+    "uri": "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority&appName=PudiBot"
+  }
+}
+```
+
+**Önemli**: MongoDB URI'sindeki `<db_password>` kısmını gerçek şifrenizle değiştirin!
+
+### 5. Veri Aktarımı (Eski JSON Verileri Varsa)
+Eğer daha önce JSON dosyalarında veri saklıyorsanız, MongoDB'ye aktarmak için:
+
+```bash
+node migrate.js
+```
+
+### 6. Botu Başlatın
+```bash
+npm start
+```
+
+## 📚 Komutlar
+
+### Moderasyon Komutları
+- `!warn <@kullanıcı> [sebep]` - Kullanıcıyı uyar
+- `!unwarn <@kullanıcı> <uyarı_id> [sebep]` - Uyarıyı kaldır
+- `!ban <@kullanıcı> [sebep]` - Kullanıcıyı banla
+- `!unban <kullanıcı_id> [sebep]` - Banı kaldır
+- `!kick <@kullanıcı> [sebep]` - Kullanıcıyı at
+- `!mute <@kullanıcı> <süre> [sebep]` - Kullanıcıyı sustur
+- `!unmute <@kullanıcı> [sebep]` - Susturmayı kaldır
+- `!temizle <sayı> [@kullanıcı]` - Mesaj sil
+- `!sicil <@kullanıcı>` - Kullanıcı sicilini göster
+
+### Log Ayarları
+- `!warnlog <#kanal>` - Warn log kanalı ayarla
+- `!banlog <#kanal>` - Ban log kanalı ayarla
+- `!mutelog <#kanal>` - Mute log kanalı ayarla
+- `!mesajlog ayarla <#kanal>` - Mesaj log kanalı ayarla
+- `!mesajlog muaf-ekle <#kanal>` - Kanalı muaf listesine ekle
+- `!mesajlog muaf-kaldir <#kanal>` - Kanalı muaf listesinden kaldır
+- `!mesajlog muaf-listesi` - Muaf kanalları listele
+- `!gelengidenlog gelen <#kanal>` - Gelen log kanalı ayarla
+- `!gelengidenlog giden <#kanal>` - Giden log kanalı ayarla
+
+### Diğer Komutlar
 - `!ping` - Bot gecikmesini göster
 - `!zar` - Zar at
 - `!yazitura` - Yazı tura at
 - `!sunucu` - Sunucu bilgilerini göster
 - `!yardim` - Tüm komutları listele
 
-### 🛡️ Moderasyon Komutları
+## 🗄️ Veritabanı Yapısı
 
-#### 🔇 Mute Sistemi
-- `!mute <@kullanıcı> <süre> <sebep>` - Kullanıcıyı mute et
-- `!unmute <@kullanıcı> <sebep>` - Kullanıcının mute'ını kaldır
-- Discord'un timeout özelliğini kullanır
-- Süre formatları: `s` (saniye), `m` (dakika), `h` (saat), `d` (gün)
-- Örnek: `!mute @kullanıcı 1h Spam yapma`
+### Koleksiyonlar
+- **warnings**: Kullanıcı uyarıları
+- **logChannels**: Log kanal ayarları
+- **messageLogExempt**: Mesaj log muaf kanalları
 
-#### 🔨 Ban Sistemi
-- `!ban <@kullanıcı> <sebep>` - Kullanıcıyı banla
-- `!unban <kullanıcı_id> <sebep>` - Kullanıcının banını kaldır
-- Yetki hiyerarşisi kontrolü
-- Örnek: `!ban @kullanıcı Kuralları ihlal etti`
+### Örnek Veri Yapıları
 
-#### 👢 Kick Sistemi
-- `!kick <@kullanıcı> <sebep>` - Kullanıcıyı sunucudan at
-- Örnek: `!kick @kullanıcı Uygunsuz davranış`
-
-#### ⚠️ Uyarı Sistemi
-- `!warn <@kullanıcı> <sebep>` - Kullanıcıya uyarı ver
-- `!unwarn <@kullanıcı> <uyarı_id> <sebep>` - Kullanıcının uyarısını kaldır
-- Uyarı geçmişi saklanır
-- Örnek: `!warn @kullanıcı Spam yapma`
-
-#### 📋 Sicil Sistemi
-- `!sicil <@kullanıcı>` - Kullanıcının moderasyon geçmişini göster
-- Uyarı sayısı ve detayları
-- Ban geçmişi
-- Hesap bilgileri
-
-#### 🧹 Mesaj Temizleme
-- `!temizle <sayı> [@kullanıcı]` - Mesaj sil
-- Belirli kullanıcının mesajlarını silme
-- 1-100 arası mesaj silebilir
-- Örnek: `!temizle 10` veya `!temizle 50 @kullanıcı`
-
-### 📝 Log Sistemi
-
-#### Log Kanalı Ayarları
-- `!mutelog <#kanal>` - Mute log kanalını ayarla
-- `!banlog <#kanal>` - Ban log kanalını ayarla
-- `!warnlog <#kanal>` - Warn log kanalını ayarla
-- `!mesajlog <#kanal>` - Mesaj log kanalını ayarla
-
-#### Otomatik Loglama
-- Tüm moderasyon işlemleri loglanır
-- Mesaj silme/düzenleme logları
-- Embed formatında detaylı bilgiler
-- Gif thumbnail'ları
-
-## 🚀 Kurulum
-
-1. **Gereksinimler**
-   - Node.js 16.9.0 veya üzeri
-   - Discord Bot Token
-
-2. **Kurulum Adımları**
-   ```bash
-   # Projeyi klonla
-   git clone <repository-url>
-   cd PudiBot
-
-   # Bağımlılıkları yükle
-   npm install
-
-   # config.json dosyasını düzenle
-   # Discord Developer Portal'dan bot token'ını al
-   ```
-
-3. **config.json Yapılandırması**
-   ```json
-   {
-     "token": "BOT_TOKEN_BURAYA",
-     "clientId": "BOT_CLIENT_ID_BURAYA"
-   }
-   ```
-
-4. **Bot'u Başlat**
-   ```bash
-   npm start
-   ```
-
-## 🔐 Gerekli Yetkiler
-
-Bot'un çalışması için aşağıdaki yetkilere ihtiyaç vardır:
-
-### Bot Yetkileri
-- **Üyeleri Yönet** - Mute, warn işlemleri için
-- **Üyeleri Yasakla** - Ban işlemleri için
-- **Üyeleri At** - Kick işlemleri için
-- **Mesajları Yönet** - Mesaj silme işlemleri için
-- **Mesaj Gönder** - Log kanallarına mesaj göndermek için
-
-### Kullanıcı Yetkileri
-- **Yönetici** - Log kanalı ayarları için
-- **Üyeleri Yönet** - Mute, warn işlemleri için
-- **Üyeleri Yasakla** - Ban işlemleri için
-- **Üyeleri At** - Kick işlemleri için
-- **Mesajları Yönet** - Mesaj silme işlemleri için
-
-## 📁 Proje Yapısı
-
-```
-PudiBot/
-├── commands/           # Moderasyon komutları
-│   ├── mute.js        # Mute komutu
-│   ├── unmute.js      # Unmute komutu
-│   ├── ban.js         # Ban komutu
-│   ├── unban.js       # Unban komutu
-│   ├── kick.js        # Kick komutu
-│   ├── warn.js        # Warn komutu
-│   ├── unwarn.js      # Unwarn komutu
-│   ├── sicil.js       # Sicil komutu
-│   ├── temizle.js     # Mesaj temizleme
-│   ├── mutelog.js     # Mute log ayarı
-│   ├── banlog.js      # Ban log ayarı
-│   ├── warnlog.js     # Warn log ayarı
-│   └── mesajlog.js    # Mesaj log ayarı
-├── events/            # Event handler'ları
-│   └── messageLog.js  # Mesaj loglama
-├── utils/             # Yardımcı fonksiyonlar
-│   └── logHelper.js   # Log sistemi yardımcıları
-├── data/              # Veri dosyaları (otomatik oluşturulur)
-│   ├── warnings.json  # Uyarı geçmişi
-│   └── logchannels.json # Log kanalı ayarları
-├── index.js           # Ana bot dosyası
-├── config.json        # Bot yapılandırması
-└── package.json       # Proje bağımlılıkları
+#### Warnings Koleksiyonu
+```json
+{
+  "guildId": "123456789",
+  "userId": "987654321",
+  "warnings": [
+    {
+      "reason": "Spam yapma",
+      "moderator": "111222333",
+      "moderatorName": "Moderator#1234",
+      "timestamp": 1640995200000,
+      "warningId": "1640995200000"
+    }
+  ]
+}
 ```
 
-## 🎨 Embed Özellikleri
+#### LogChannels Koleksiyonu
+```json
+{
+  "guildId": "123456789",
+  "warn": "111111111111111111",
+  "ban": "222222222222222222",
+  "mute": "333333333333333333",
+  "message": "444444444444444444",
+  "joinLog": "555555555555555555",
+  "leaveLog": "666666666666666666"
+}
+```
 
-Tüm moderasyon komutları embed mesajları kullanır:
-- **Renkli başlıklar** - İşlem türüne göre renk kodlaması
-- **Gif thumbnail'ları** - Görsel efektler
-- **Detaylı bilgiler** - Kullanıcı ID, tarih, sebep
-- **Footer bilgileri** - Ek detaylar
+## 🔧 Geliştirme
 
-## 🔧 Özelleştirme
+### Geliştirme Modu
+```bash
+npm run dev
+```
 
-### Log Kanalı Ayarları
-1. Sunucunuzda log kanalları oluşturun (örn: `#mute-log`, `#ban-log`)
-2. Bot'a bu kanallarda mesaj gönderme yetkisi verin
-3. Komutları kullanarak log kanallarını ayarlayın:
-   ```
-   !mutelog #mute-log
-   !banlog #ban-log
-   !warnlog #warn-log
-   !mesajlog #mesaj-log
-   ```
+### Yeni Komut Ekleme
+1. `commands/` klasörüne yeni komut dosyası ekleyin
+2. `module.exports` ile komut yapısını tanımlayın
+3. MongoDB fonksiyonlarını `utils/database.js`'den kullanın
 
-### Gif Thumbnail'ları
-Komut dosyalarındaki thumbnail URL'lerini değiştirerek özel gif'ler kullanabilirsiniz.
-
-## 📊 Veri Saklama
-
-Bot aşağıdaki verileri yerel olarak saklar:
-- **Uyarı geçmişi** - `data/warnings.json`
-- **Log kanalı ayarları** - `data/logchannels.json`
-
-Bu dosyalar otomatik olarak oluşturulur ve yönetilir.
+### Yeni Event Ekleme
+1. `events/` klasörüne yeni event dosyası ekleyin
+2. `events` objesi içinde event handler'ları tanımlayın
 
 ## 🐛 Sorun Giderme
 
-### Yaygın Sorunlar
+### MongoDB Bağlantı Hatası
+- MongoDB URI'nin doğru olduğundan emin olun
+- Network Access ayarlarını kontrol edin
+- Kullanıcı adı ve şifrenin doğru olduğundan emin olun
 
-1. **Bot yetkisi hatası**
-   - Bot'un gerekli yetkilere sahip olduğundan emin olun
-   - Sunucu ayarlarından bot rolünü kontrol edin
+### Bot Yetki Hatası
+- Bot'un gerekli yetkilere sahip olduğundan emin olun
+- Log kanallarında mesaj gönderme yetkisi kontrol edin
 
-2. **Log kanalı çalışmıyor**
-   - Log kanalının doğru ayarlandığından emin olun
-   - Bot'un kanala mesaj gönderme yetkisi olduğunu kontrol edin
+### Komut Çalışmıyor
+- Bot'un sunucuda olduğundan emin olun
+- Komut prefix'inin doğru olduğunu kontrol edin (`!`)
+- Konsol hatalarını kontrol edin
 
-3. **Komut çalışmıyor**
-   - Prefix'in `!` olduğundan emin olun
-   - Kullanıcının gerekli yetkilere sahip olduğunu kontrol edin
-
-## 📝 Lisans
+## 📄 Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır.
 
@@ -200,12 +189,8 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 2. Feature branch oluşturun (`git checkout -b feature/AmazingFeature`)
 3. Commit yapın (`git commit -m 'Add some AmazingFeature'`)
 4. Push yapın (`git push origin feature/AmazingFeature`)
-5. Pull Request açın
+5. Pull Request oluşturun
 
 ## 📞 İletişim
 
-Sorularınız için GitHub Issues kullanabilirsiniz.
-
----
-
-**PudiBot v2.1** - Gelişmiş Discord Moderasyon Sistemi 
+Sorularınız için issue açabilir veya Discord üzerinden iletişime geçebilirsiniz. 

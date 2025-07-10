@@ -1,6 +1,5 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { loadLogChannels, saveLogChannels } = require('../utils/logHelper');
-const messageLogModule = require('../events/messageLog');
+const { setLogChannel, addMessageLogExempt, removeMessageLogExempt, getMessageLogExempt } = require('../utils/database');
 
 module.exports = {
     name: 'mesajlog',
@@ -54,12 +53,10 @@ module.exports = {
                         return message.reply({ embeds: [errorEmbed] });
                     }
 
-                    const logChannels = loadLogChannels();
-                    if (!logChannels[message.guild.id]) {
-                        logChannels[message.guild.id] = {};
+                    const success = await setLogChannel(message.guild.id, 'message', channel.id);
+                    if (!success) {
+                        throw new Error('Log kanalı veritabanına kaydedilemedi');
                     }
-                    logChannels[message.guild.id].message = channel.id;
-                    saveLogChannels(logChannels);
 
                     const successEmbed = new EmbedBuilder()
                         .setColor('#00ff00')
@@ -92,14 +89,13 @@ module.exports = {
                         return message.reply({ embeds: [errorEmbed] });
                     }
 
-                    const exemptChannels = messageLogModule.loadExemptChannels();
-                    if (!exemptChannels[message.guild.id]) {
-                        exemptChannels[message.guild.id] = [];
-                    }
+                    const exemptChannels = await getMessageLogExempt(message.guild.id);
                     
-                    if (!exemptChannels[message.guild.id].includes(exemptChannel.id)) {
-                        exemptChannels[message.guild.id].push(exemptChannel.id);
-                        messageLogModule.saveExemptChannels(exemptChannels);
+                    if (!exemptChannels.includes(exemptChannel.id)) {
+                        const addSuccess = await addMessageLogExempt(message.guild.id, exemptChannel.id);
+                        if (!addSuccess) {
+                            throw new Error('Kanal muaf listesine eklenemedi');
+                        }
 
                         const successEmbed = new EmbedBuilder()
                             .setColor('#00ff00')
@@ -140,10 +136,12 @@ module.exports = {
                         return message.reply({ embeds: [errorEmbed] });
                     }
 
-                    const removeExemptChannels = messageLogModule.loadExemptChannels();
-                    if (removeExemptChannels[message.guild.id]?.includes(removeChannel.id)) {
-                        removeExemptChannels[message.guild.id] = removeExemptChannels[message.guild.id].filter(id => id !== removeChannel.id);
-                        messageLogModule.saveExemptChannels(removeExemptChannels);
+                    const removeExemptChannels = await getMessageLogExempt(message.guild.id);
+                    if (removeExemptChannels.includes(removeChannel.id)) {
+                        const removeSuccess = await removeMessageLogExempt(message.guild.id, removeChannel.id);
+                        if (!removeSuccess) {
+                            throw new Error('Kanal muaf listesinden kaldırılamadı');
+                        }
 
                         const successEmbed = new EmbedBuilder()
                             .setColor('#00ff00')
@@ -165,10 +163,9 @@ module.exports = {
                     break;
 
                 case 'muaf-listesi':
-                    const listExemptChannels = messageLogModule.loadExemptChannels();
-                    const guildExemptChannels = listExemptChannels[message.guild.id] || [];
+                    const listExemptChannels = await getMessageLogExempt(message.guild.id);
 
-                    if (guildExemptChannels.length === 0) {
+                    if (listExemptChannels.length === 0) {
                         const noExemptEmbed = new EmbedBuilder()
                             .setColor('#0099ff')
                             .setTitle('📋 Muaf Kanal Listesi')
@@ -176,7 +173,7 @@ module.exports = {
                             .setTimestamp();
                         await message.reply({ embeds: [noExemptEmbed] });
                     } else {
-                        const channelList = guildExemptChannels.map(channelId => {
+                        const channelList = listExemptChannels.map(channelId => {
                             const channel = message.guild.channels.cache.get(channelId);
                             return channel ? `${channel} (${channelId})` : `Bilinmeyen Kanal (${channelId})`;
                         }).join('\n');
@@ -185,7 +182,7 @@ module.exports = {
                             .setColor('#0099ff')
                             .setTitle('📋 Muaf Kanal Listesi')
                             .setDescription(channelList)
-                            .setFooter({ text: `Toplam: ${guildExemptChannels.length} kanal` })
+                            .setFooter({ text: `Toplam: ${listExemptChannels.length} kanal` })
                             .setTimestamp();
 
                         await message.reply({ embeds: [listEmbed] });
@@ -202,7 +199,7 @@ module.exports = {
                     break;
             }
         } catch (error) {
-            console.error('Mesaj log ayarlama hatası:', error);
+            console.error('Mesaj log hatası:', error);
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('❌ Mesaj Log Hatası')

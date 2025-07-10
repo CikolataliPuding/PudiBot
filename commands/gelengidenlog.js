@@ -1,5 +1,5 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { loadLogChannels, saveLogChannels } = require('../utils/logHelper');
+const { setLogChannel } = require('../utils/database');
 
 module.exports = {
     name: 'gelengidenlog',
@@ -51,21 +51,13 @@ module.exports = {
         }
 
         try {
-            const logChannels = loadLogChannels();
+            // MongoDB'ye log kanalını kaydet
+            const logType = type === 'gelen' ? 'joinLog' : 'leaveLog';
+            const success = await setLogChannel(message.guild.id, logType, channel.id);
             
-            // Sunucu ID'si yoksa oluştur
-            if (!logChannels[message.guild.id]) {
-                logChannels[message.guild.id] = {};
+            if (!success) {
+                throw new Error('Log kanalı veritabanına kaydedilemedi');
             }
-
-            // Log kanalını ayarla
-            if (type === 'gelen') {
-                logChannels[message.guild.id].joinLog = channel.id;
-            } else {
-                logChannels[message.guild.id].leaveLog = channel.id;
-            }
-
-            saveLogChannels(logChannels);
 
             const successEmbed = new EmbedBuilder()
                 .setColor('#00ff00')

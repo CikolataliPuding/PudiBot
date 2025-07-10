@@ -1,38 +1,6 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { sendToLogChannel } = require('../utils/logHelper');
-const fs = require('fs');
-const path = require('path');
-
-// Uyarıları saklamak için dosya yolu
-const warningsPath = path.join(__dirname, '..', 'data', 'warnings.json');
-
-// Uyarıları yükle
-function loadWarnings() {
-    try {
-        if (fs.existsSync(warningsPath)) {
-            const data = fs.readFileSync(warningsPath, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (error) {
-        console.error('Uyarılar yüklenirken hata:', error);
-    }
-    return {};
-}
-
-// Uyarıları kaydet
-function saveWarnings(warnings) {
-    try {
-        // data klasörünü oluştur
-        const dataDir = path.dirname(warningsPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
-        
-        fs.writeFileSync(warningsPath, JSON.stringify(warnings, null, 2));
-    } catch (error) {
-        console.error('Uyarılar kaydedilirken hata:', error);
-    }
-}
+const { getWarnings, removeWarning } = require('../utils/database');
 
 module.exports = {
     name: 'unwarn',
@@ -95,11 +63,8 @@ module.exports = {
         }
 
         try {
-            // Uyarıları yükle
-            const warnings = loadWarnings();
-            
             // Kullanıcının uyarılarını al
-            const userWarnings = warnings[message.guild.id]?.[targetUser.id] || [];
+            const userWarnings = await getWarnings(message.guild.id, targetUser.id);
             
             if (userWarnings.length === 0) {
                 const errorEmbed = new EmbedBuilder()
@@ -111,9 +76,9 @@ module.exports = {
             }
 
             // Uyarıyı bul
-            const warningIndex = userWarnings.findIndex(warning => warning.warningId === warningId);
+            const warningToRemove = userWarnings.find(warning => warning.warningId === warningId);
             
-            if (warningIndex === -1) {
+            if (!warningToRemove) {
                 const errorEmbed = new EmbedBuilder()
                     .setColor('#ff0000')
                     .setTitle('❌ Uyarı Bulunamadı')
@@ -125,17 +90,18 @@ module.exports = {
                 return message.reply({ embeds: [errorEmbed] });
             }
 
-            // Silinecek uyarıyı al
-            const removedWarning = userWarnings[warningIndex];
-
-            // Uyarıyı sil
-            userWarnings.splice(warningIndex, 1);
+            // Uyarıyı MongoDB'den kaldır
+            const success = await removeWarning(message.guild.id, targetUser.id, warningId);
             
-            // Uyarıları kaydet
-            saveWarnings(warnings);
+            if (!success) {
+                throw new Error('Uyarı veritabanından kaldırılamadı');
+            }
 
             // Sebep
             const reason = args.slice(2).join(' ') || 'Sebep belirtilmedi';
+
+            // Kalan uyarı sayısı
+            const remainingWarnings = userWarnings.length - 1;
 
             // Başarı embed'i
             const successEmbed = new EmbedBuilder()
@@ -145,8 +111,8 @@ module.exports = {
                 .addFields(
                     { name: '👤 Kullanıcı', value: `${targetUser} (${targetUser.id})`, inline: true },
                     { name: '🛡️ Uyarı Kaldıran', value: `${message.author} (${message.author.id})`, inline: true },
-                    { name: '📊 Kalan Uyarı', value: `${userWarnings.length}`, inline: true },
-                    { name: '🗑️ Kaldırılan Uyarı', value: removedWarning.reason, inline: false },
+                    { name: '📊 Kalan Uyarı', value: `${remainingWarnings}`, inline: true },
+                    { name: '🗑️ Kaldırılan Uyarı', value: warningToRemove.reason, inline: false },
                     { name: '📝 Sebep', value: reason, inline: false }
                 )
                 .setFooter({ text: `ID: ${targetUser.id} | Uyarı ID: ${warningId}` })
@@ -156,8 +122,6 @@ module.exports = {
 
             // Log kanalına gönder
             await sendToLogChannel(message.guild, 'unwarn', successEmbed);
-
-
 
         } catch (error) {
             console.error('Unwarn hatası:', error);

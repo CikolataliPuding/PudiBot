@@ -1,49 +1,21 @@
 const { EmbedBuilder } = require('discord.js');
-const { loadLogChannels } = require('../utils/logHelper');
-const fs = require('fs');
-const path = require('path');
-
-// Muaf kanalları saklamak için dosya yolu
-const exemptChannelsPath = path.join(__dirname, '..', 'data', 'exemptChannels.json');
-
-// Muaf kanalları yükle
-function loadExemptChannels() {
-    try {
-        if (fs.existsSync(exemptChannelsPath)) {
-            const data = fs.readFileSync(exemptChannelsPath, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (error) {
-        console.error('Muaf kanallar yüklenirken hata:', error);
-    }
-    return {};
-}
-
-// Muaf kanalları kaydet
-function saveExemptChannels(exemptChannels) {
-    try {
-        const dataDir = path.dirname(exemptChannelsPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
-        
-        fs.writeFileSync(exemptChannelsPath, JSON.stringify(exemptChannels, null, 2));
-    } catch (error) {
-        console.error('Muaf kanallar kaydedilirken hata:', error);
-    }
-}
+const { getLogChannel, getMessageLogExempt } = require('../utils/database');
 
 // Kanal muaf mı kontrol et
-function isChannelExempt(guildId, channelId) {
-    const exemptChannels = loadExemptChannels();
-    return exemptChannels[guildId]?.includes(channelId) || false;
+async function isChannelExempt(guildId, channelId) {
+    try {
+        const exemptChannels = await getMessageLogExempt(guildId);
+        return exemptChannels.includes(channelId);
+    } catch (error) {
+        console.error('Muaf kanal kontrolü hatası:', error);
+        return false;
+    }
 }
 
 // Mesaj log kanalına gönder
 async function sendToMessageLog(guild, embed) {
     try {
-        const logChannels = loadLogChannels();
-        const messageLogChannelId = logChannels[guild.id]?.message;
+        const messageLogChannelId = await getLogChannel(guild.id, 'message');
         
         if (messageLogChannelId) {
             const logChannel = guild.channels.cache.get(messageLogChannelId);
@@ -79,7 +51,7 @@ module.exports = {
             if (message.author?.bot) return;
             
             // Kanal muaf mı kontrol et
-            if (isChannelExempt(message.guild.id, message.channel.id)) return;
+            if (await isChannelExempt(message.guild.id, message.channel.id)) return;
             
             const embed = new EmbedBuilder()
                 .setColor('#ff0000')
@@ -103,7 +75,7 @@ module.exports = {
             if (oldMessage.content === newMessage.content) return;
             
             // Kanal muaf mı kontrol et
-            if (isChannelExempt(oldMessage.guild.id, oldMessage.channel.id)) return;
+            if (await isChannelExempt(oldMessage.guild.id, oldMessage.channel.id)) return;
 
             const embed = new EmbedBuilder()
                 .setColor('#ffff00')
@@ -128,7 +100,7 @@ module.exports = {
             if (!firstMessage) return;
             
             // Kanal muaf mı kontrol et
-            if (isChannelExempt(firstMessage.guild.id, firstMessage.channel.id)) return;
+            if (await isChannelExempt(firstMessage.guild.id, firstMessage.channel.id)) return;
             
             const embed = new EmbedBuilder()
                 .setColor('#ff0000')
@@ -143,10 +115,5 @@ module.exports = {
 
             await sendToMessageLog(firstMessage.guild, embed);
         }
-    },
-    
-    // Muaf kanal yönetimi fonksiyonları
-    loadExemptChannels,
-    saveExemptChannels,
-    isChannelExempt
+    }
 }; 
