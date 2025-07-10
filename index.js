@@ -133,6 +133,7 @@ client.on('messageCreate', async message => {
                 break;
                 
             case 'yardim':
+            case 'yardım':
             case 'help':
                 const helpEmbed = new EmbedBuilder()
                     .setColor('#ff9900')
