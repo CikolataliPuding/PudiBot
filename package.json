@@ -7,14 +7,19 @@
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "keywords": ["discord", "bot"],
+  "keywords": [
+    "discord",
+    "bot"
+  ],
   "author": "PudiBot",
   "license": "MIT",
   "dependencies": {
     "discord.js": "^14.14.1",
-    "mongodb": "^6.3.0"
+    "dotenv": "^17.2.0",
+    "mongodb": "^6.3.0",
+    "mongoose": "^8.16.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
   }
-} 
+}
