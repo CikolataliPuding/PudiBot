@@ -1,11 +1,26 @@
 const { EmbedBuilder } = require('discord.js');
-const { getLogChannel } = require('../utils/database');
+const { getLogChannel, getAutoRole } = require('../utils/database');
 
 module.exports = {
     events: {
         // Kullanıcı sunucuya katıldığında
         guildMemberAdd: async (member) => {
             try {
+                // Otorol sistemi
+                const autoRoleId = await getAutoRole(member.guild.id);
+                if (autoRoleId) {
+                    const autoRole = member.guild.roles.cache.get(autoRoleId);
+                    if (autoRole && member.guild.members.me.permissions.has('ManageRoles')) {
+                        try {
+                            await member.roles.add(autoRole);
+                            console.log(`✅ ${member.user.tag} kullanıcısına ${autoRole.name} rolü verildi (Otorol)`);
+                        } catch (roleError) {
+                            console.error(`❌ Otorol verme hatası (${member.user.tag}):`, roleError);
+                        }
+                    }
+                }
+
+                // Gelen log kanalı
                 const joinLogChannelId = await getLogChannel(member.guild.id, 'joinLog');
                 
                 if (joinLogChannelId) {
@@ -22,14 +37,21 @@ module.exports = {
                                 { name: '📅 Hesap Oluşturma', value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:F>`, inline: true },
                                 { name: '📊 Sunucu Üye Sayısı', value: `${member.guild.memberCount}`, inline: true }
                             )
-                            .setFooter({ text: `Hoş geldin ${member.user.username}!` })
+                            .setFooter({ text: `Hoş geldin ${member.user.username}!`, iconURL: member.guild.iconURL({ dynamic: true }) })
                             .setTimestamp();
+
+                        // Otorol bilgisi ekle
+                        if (autoRoleId && autoRole) {
+                            joinEmbed.addFields(
+                                { name: '🎯 Verilen Rol', value: `${autoRole} (Otorol)`, inline: true }
+                            );
+                        }
 
                         await logChannel.send({ embeds: [joinEmbed] });
                     }
                 }
             } catch (error) {
-                console.error('Kullanıcı katılma log hatası:', error);
+                console.error('Kullanıcı katılma işlemi hatası:', error);
             }
         },
 
@@ -52,7 +74,7 @@ module.exports = {
                                 { name: '📅 Katılma Tarihi', value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>`, inline: true },
                                 { name: '📊 Sunucu Üye Sayısı', value: `${member.guild.memberCount}`, inline: true }
                             )
-                            .setFooter({ text: `Görüşürüz ${member.user.username}!` })
+                            .setFooter({ text: `Görüşürüz ${member.user.username}!`, iconURL: member.guild.iconURL({ dynamic: true }) })
                             .setTimestamp();
 
                         await logChannel.send({ embeds: [leaveEmbed] });

@@ -1,5 +1,5 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { setLogChannel } = require('../utils/database');
+const { loadLogChannels, saveLogChannels } = require('../utils/logHelper');
 
 module.exports = {
     name: 'banlog',
@@ -51,12 +51,19 @@ module.exports = {
         }
 
         try {
-            // MongoDB'ye ban log kanalını kaydet
-            const success = await setLogChannel(message.guild.id, 'ban', channel.id);
+            // Log kanallarını yükle
+            const logChannels = loadLogChannels();
             
-            if (!success) {
-                throw new Error('Log kanalı veritabanına kaydedilemedi');
+            // Sunucu ID'si yoksa oluştur
+            if (!logChannels[message.guild.id]) {
+                logChannels[message.guild.id] = {};
             }
+
+            // Ban log kanalını ayarla
+            logChannels[message.guild.id].ban = channel.id;
+            
+            // Log kanallarını kaydet
+            saveLogChannels(logChannels);
 
             // Başarı embed'i
             const successEmbed = new EmbedBuilder()
@@ -65,7 +72,7 @@ module.exports = {
                 .setThumbnail('https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif')
                 .addFields(
                     { name: '📝 Kanal', value: `${channel}`, inline: true },
-                    { name: '🛡️ Ayarlayan', value: `${message.author}`, inline: true },
+                    { name: '🛡️ Ayalayan', value: `${message.author}`, inline: true },
                     { name: '📊 Kanal ID', value: channel.id, inline: true }
                 )
                 .setFooter({ text: 'Artık ban işlemleri bu kanala loglanacak' })

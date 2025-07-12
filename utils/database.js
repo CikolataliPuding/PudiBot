@@ -188,6 +188,217 @@ async function getMessageLogExempt(guildId) {
     }
 }
 
+// LEVEL SİSTEMİ KOLEKSİYONU
+const levelsCollection = () => db.collection('levels');
+
+// Kullanıcıya XP ekle
+async function addXP(guildId, userId, xp) {
+    try {
+        const collection = levelsCollection();
+        const result = await collection.findOneAndUpdate(
+            { guildId, userId },
+            { $inc: { xp: xp }, $setOnInsert: { level: 0 } },
+            { upsert: true, returnDocument: 'after' }
+        );
+        
+        // Eğer result.value null ise, varsayılan değerlerle döndür
+        if (!result.value) {
+            return { guildId, userId, xp: xp, level: 0 };
+        }
+        
+        return result.value;
+    } catch (error) {
+        console.error('XP ekleme hatası:', error);
+        // Hata durumunda varsayılan değerlerle döndür
+        return { guildId, userId, xp: xp, level: 0 };
+    }
+}
+
+// Kullanıcı level ve XP bilgisini getir
+async function getLevelData(guildId, userId) {
+    try {
+        const collection = levelsCollection();
+        const result = await collection.findOne({ guildId, userId });
+        return result || { guildId, userId, xp: 0, level: 0 };
+    } catch (error) {
+        console.error('Level verisi getirme hatası:', error);
+        return { guildId, userId, xp: 0, level: 0 };
+    }
+}
+
+// Kullanıcıya level ata
+async function setLevel(guildId, userId, level) {
+    try {
+        const collection = levelsCollection();
+        await collection.updateOne(
+            { guildId, userId },
+            { $set: { level: level } },
+            { upsert: true }
+        );
+        return true;
+    } catch (error) {
+        console.error('Level ayarlama hatası:', error);
+        return false;
+    }
+}
+
+// Leaderboard (ilk N kişi)
+async function getLeaderboard(guildId, limit = 10) {
+    try {
+        const collection = levelsCollection();
+        const results = await collection.find({ guildId }).sort({ level: -1, xp: -1 }).limit(limit).toArray();
+        return results;
+    } catch (error) {
+        console.error('Leaderboard getirme hatası:', error);
+        return [];
+    }
+}
+
+// Kullanıcının sırasını getir
+async function getUserRank(guildId, userId) {
+    try {
+        const collection = levelsCollection();
+        const all = await collection.find({ guildId }).sort({ level: -1, xp: -1 }).toArray();
+        const index = all.findIndex(u => u.userId === userId);
+        return index === -1 ? null : index + 1;
+    } catch (error) {
+        console.error('Kullanıcı sırası getirme hatası:', error);
+        return null;
+    }
+}
+
+// XP katsayıları koleksiyonu
+const xpMultipliersCollection = () => db.collection('xpMultipliers');
+
+// Rol için XP katsayısı ayarla
+async function setXPMultiplier(guildId, roleId, multiplier) {
+    try {
+        const collection = xpMultipliersCollection();
+        await collection.updateOne(
+            { guildId, roleId },
+            { $set: { multiplier } },
+            { upsert: true }
+        );
+        return true;
+    } catch (error) {
+        console.error('XP katsayısı ayarlama hatası:', error);
+        return false;
+    }
+}
+
+// Rolün XP katsayısını getir
+async function getXPMultiplier(guildId, roleId) {
+    try {
+        const collection = xpMultipliersCollection();
+        const result = await collection.findOne({ guildId, roleId });
+        return result ? result.multiplier : 1;
+    } catch (error) {
+        console.error('XP katsayısı getirme hatası:', error);
+        return 1;
+    }
+}
+
+// Tüm XP katsayılarını getir
+async function getAllXPMultipliers(guildId) {
+    try {
+        const collection = xpMultipliersCollection();
+        const results = await collection.find({ guildId }).toArray();
+        return results;
+    } catch (error) {
+        console.error('XP katsayıları getirme hatası:', error);
+        return [];
+    }
+}
+
+// XP kazandırmayan kanallar koleksiyonu
+const xpExcludedChannelsCollection = () => db.collection('xpExcludedChannels');
+
+// XP kazandırmayan kanal ekle
+async function addXPExcludedChannel(guildId, channelId) {
+    try {
+        const collection = xpExcludedChannelsCollection();
+        await collection.updateOne(
+            { guildId },
+            { $addToSet: { channels: channelId } },
+            { upsert: true }
+        );
+        return true;
+    } catch (error) {
+        console.error('XP muaf kanal ekleme hatası:', error);
+        return false;
+    }
+}
+
+// XP kazandırmayan kanal kaldır
+async function removeXPExcludedChannel(guildId, channelId) {
+    try {
+        const collection = xpExcludedChannelsCollection();
+        await collection.updateOne(
+            { guildId },
+            { $pull: { channels: channelId } }
+        );
+        return true;
+    } catch (error) {
+        console.error('XP muaf kanal kaldırma hatası:', error);
+        return false;
+    }
+}
+
+// XP kazandırmayan kanalları getir
+async function getXPExcludedChannels(guildId) {
+    try {
+        const collection = xpExcludedChannelsCollection();
+        const result = await collection.findOne({ guildId });
+        return result ? result.channels : [];
+    } catch (error) {
+        console.error('XP muaf kanallar getirme hatası:', error);
+        return [];
+    }
+}
+
+// OTOROL SİSTEMİ KOLEKSİYONU
+const autoRoleCollection = () => db.collection('autoRole');
+
+// Otorol ayarla
+async function setAutoRole(guildId, roleId) {
+    try {
+        const collection = autoRoleCollection();
+        await collection.updateOne(
+            { guildId },
+            { $set: { roleId: roleId } },
+            { upsert: true }
+        );
+        return true;
+    } catch (error) {
+        console.error('Otorol ayarlama hatası:', error);
+        return false;
+    }
+}
+
+// Otorol getir
+async function getAutoRole(guildId) {
+    try {
+        const collection = autoRoleCollection();
+        const result = await collection.findOne({ guildId });
+        return result ? result.roleId : null;
+    } catch (error) {
+        console.error('Otorol getirme hatası:', error);
+        return null;
+    }
+}
+
+// Otorol kaldır
+async function removeAutoRole(guildId) {
+    try {
+        const collection = autoRoleCollection();
+        await collection.deleteOne({ guildId });
+        return true;
+    } catch (error) {
+        console.error('Otorol kaldırma hatası:', error);
+        return false;
+    }
+}
+
 module.exports = {
     connectToDatabase,
     getDatabase,
@@ -201,5 +412,21 @@ module.exports = {
     getAllLogChannels,
     addMessageLogExempt,
     removeMessageLogExempt,
-    getMessageLogExempt
+    getMessageLogExempt,
+    // LEVEL SİSTEMİ
+    addXP,
+    getLevelData,
+    setLevel,
+    getLeaderboard,
+    getUserRank,
+    setXPMultiplier,
+    getXPMultiplier,
+    getAllXPMultipliers,
+    addXPExcludedChannel,
+    removeXPExcludedChannel,
+    getXPExcludedChannels,
+    // OTOROL SİSTEMİ
+    setAutoRole,
+    getAutoRole,
+    removeAutoRole
 }; 

@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection, EmbedBuilder } = require('discord.js');
+const { Client, Collection, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { token } = require('./config.json');
 const fs = require('fs');
 const path = require('path');
@@ -135,29 +135,204 @@ client.on('messageCreate', async message => {
             case 'yardim':
             case 'yardım':
             case 'help':
-                const helpEmbed = new EmbedBuilder()
-                    .setColor('#ff9900')
-                    .setTitle('🤖 PudiBot Komutları')
-                    .setDescription('İşte kullanabileceğiniz komutlar:')
+                const mainHelpEmbed = new EmbedBuilder()
+                    .setColor('#4ECDC4')
+                    .setTitle('🤖 PudiBot Yardım Menüsü')
+                    .setDescription('Aşağıdaki butonlardan istediğiniz kategoriyi seçin:')
                     .addFields(
-                        { name: '🏓 Ping', value: '`!ping` - Bot gecikmesini göster', inline: true },
-                        { name: '🎲 Zar', value: '`!zar` - Zar at', inline: true },
-                        { name: '🪙 Yazı Tura', value: '`!yazitura` - Yazı tura at', inline: true },
-                        { name: '📊 Sunucu', value: '`!sunucu` - Sunucu bilgilerini göster', inline: true },
-                        { name: '🔇 Mute', value: '`!mute <@kullanıcı> <süre> <sebep>` - Kullanıcıyı mute et', inline: true },
-                        { name: '🔊 Unmute', value: '`!unmute <@kullanıcı> <sebep>` - Kullanıcının mute\'ını kaldır', inline: true },
-                        { name: '🔨 Ban', value: '`!ban <@kullanıcı> <sebep>` - Kullanıcıyı banla', inline: true },
-                        { name: '🔓 Unban', value: '`!unban <kullanıcı_id> <sebep>` - Kullanıcının banını kaldır', inline: true },
-                        { name: '👢 Kick', value: '`!kick <@kullanıcı> <sebep>` - Kullanıcıyı at', inline: true },
-                        { name: '⚠️ Warn', value: '`!warn <@kullanıcı> <sebep>` - Kullanıcıyı uyar', inline: true },
-                        { name: '✅ Unwarn', value: '`!unwarn <@kullanıcı> <uyarı_id> <sebep>` - Uyarıyı kaldır', inline: true },
-                        { name: '📋 Sicil', value: '`!sicil <@kullanıcı>` - Kullanıcının sicilini göster', inline: true },
-                        { name: '🧹 Temizle', value: '`!temizle <sayı> [@kullanıcı]` - Mesaj sil', inline: true },
-                        { name: '📝 Log Ayarları', value: '`!mutelog <#kanal>` - Mute log kanalı\n`!banlog <#kanal>` - Ban log kanalı\n`!warnlog <#kanal>` - Warn log kanalı\n`!mesajlog ayarla <#kanal>` - Mesaj log kanalı\n`!mesajlog muaf-ekle <#kanal>` - Kanalı muaf listesine ekle\n`!mesajlog muaf-kaldir <#kanal>` - Kanalı muaf listesinden kaldır\n`!mesajlog muaf-listesi` - Muaf kanalları listele\n`!gelengidenlog gelen <#kanal>` - Gelen log kanalı\n`!gelengidenlog giden <#kanal>` - Giden log kanalı', inline: false }
+                        { name: '🎮 Eğlence', value: 'Zar, yazı tura, ping gibi eğlenceli komutlar', inline: true },
+                        { name: '🛡️ Moderasyon', value: 'Ban, mute, warn, kick gibi moderasyon komutları', inline: true },
+                        { name: '📊 Level Sistemi', value: 'Level, leaderboard, XP sistemi komutları', inline: true },
+                        { name: '📝 Log Sistemi', value: 'Log kanalları ve ayarları', inline: true },
+                        { name: '⚙️ Sunucu', value: 'Sunucu bilgileri ve ayarları', inline: true }
                     )
-                    .setFooter({ text: 'PudiBot v1 - Temel Moderasyon Sistemi' })
+                    .setThumbnail(client.user.displayAvatarURL({ dynamic: true }))
+                    .setFooter({ text: 'PudiBot v1 - Butonlu Yardım Sistemi', iconURL: client.user.displayAvatarURL({ dynamic: true }) })
                     .setTimestamp();
-                await message.reply({ embeds: [helpEmbed] });
+
+                const buttons = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId('help_fun')
+                            .setLabel('🎮 Eğlence')
+                            .setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder()
+                            .setCustomId('help_mod')
+                            .setLabel('🛡️ Moderasyon')
+                            .setStyle(ButtonStyle.Danger),
+                        new ButtonBuilder()
+                            .setCustomId('help_level')
+                            .setLabel('📊 Level')
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
+                            .setCustomId('help_log')
+                            .setLabel('📝 Log')
+                            .setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder()
+                            .setCustomId('help_server')
+                            .setLabel('⚙️ Sunucu')
+                            .setStyle(ButtonStyle.Secondary)
+                    );
+
+                const helpMessage = await message.reply({ 
+                    embeds: [mainHelpEmbed], 
+                    components: [buttons] 
+                });
+
+                // Buton collector oluştur
+                const collector = helpMessage.createMessageComponentCollector({ 
+                    time: 300000 // 5 dakika
+                });
+
+                collector.on('collect', async (interaction) => {
+                    if (interaction.user.id !== message.author.id) {
+                        return interaction.reply({ 
+                            content: '❌ Bu butonları sadece komutu kullanan kişi kullanabilir!', 
+                            ephemeral: true 
+                        });
+                    }
+
+                    if (interaction.customId === 'help_back') {
+                        await interaction.update({ 
+                            embeds: [mainHelpEmbed], 
+                            components: [buttons] 
+                        });
+                        return;
+                    }
+
+                    let embed;
+                    let newButtons;
+
+                    switch (interaction.customId) {
+                        case 'help_fun':
+                            embed = new EmbedBuilder()
+                                .setColor('#FF6B6B')
+                                .setTitle('🎮 Eğlence Komutları')
+                                .setDescription('İşte kullanabileceğiniz eğlence komutları:')
+                                .addFields(
+                                    { name: '🏓 Ping', value: '`!ping` - Bot gecikmesini gösterir', inline: true },
+                                    { name: '🎲 Zar', value: '`!zar` veya `!zarat` - 1-6 arası zar atar', inline: true },
+                                    { name: '🪙 Yazı Tura', value: '`!yazitura` veya `!yazıtura` - Yazı tura atar', inline: true }
+                                )
+                                .setFooter({ text: 'PudiBot • Eğlence Komutları', iconURL: client.user.displayAvatarURL({ dynamic: true }) })
+                                .setTimestamp();
+                            break;
+
+                        case 'help_mod':
+                            embed = new EmbedBuilder()
+                                .setColor('#FF4757')
+                                .setTitle('🛡️ Moderasyon Komutları')
+                                .setDescription('İşte kullanabileceğiniz moderasyon komutları:')
+                                .addFields(
+                                    { name: '🔇 Mute', value: '`!mute <@kullanıcı> <süre> <sebep>` - Kullanıcıyı susturur', inline: true },
+                                    { name: '🔊 Unmute', value: '`!unmute <@kullanıcı> <sebep>` - Susturmayı kaldırır', inline: true },
+                                    { name: '🔨 Ban', value: '`!ban <@kullanıcı> <sebep>` - Kullanıcıyı yasaklar', inline: true },
+                                    { name: '🔓 Unban', value: '`!unban <kullanıcı_id> <sebep>` - Yasaklamayı kaldırır', inline: true },
+                                    { name: '👢 Kick', value: '`!kick <@kullanıcı> <sebep>` - Kullanıcıyı sunucudan atar', inline: true },
+                                    { name: '⚠️ Warn', value: '`!warn <@kullanıcı> <sebep>` - Kullanıcıyı uyarır', inline: true },
+                                    { name: '✅ Unwarn', value: '`!unwarn <@kullanıcı> <uyarı_id> <sebep>` - Uyarıyı kaldırır', inline: true },
+                                    { name: '📋 Sicil', value: '`!sicil <@kullanıcı>` - Kullanıcının sicilini gösterir', inline: true },
+                                    { name: '🧹 Temizle', value: '`!temizle <sayı> [@kullanıcı]` - Mesaj siler', inline: true },
+                                    { name: '🎯 Otorol', value: '`!otorol ayarla <@rol>` - Otorol sistemini ayarlar', inline: true }
+                                )
+                                .setFooter({ text: 'PudiBot • Moderasyon Komutları', iconURL: client.user.displayAvatarURL({ dynamic: true }) })
+                                .setTimestamp();
+                            break;
+
+                        case 'help_level':
+                            embed = new EmbedBuilder()
+                                .setColor('#FFD700')
+                                .setTitle('📊 Level Sistemi Komutları')
+                                .setDescription('İşte kullanabileceğiniz level sistemi komutları:')
+                                .addFields(
+                                    { name: '🎯 Level', value: '`!level` - Kendi seviyeni ve XP bilgini gösterir', inline: true },
+                                    { name: '🏆 Leaderboard', value: '`!leaderboard` - Sunucu sıralamasını gösterir', inline: true },
+                                    { name: '⚙️ Level Ayarları', value: '`!levelsistem` - Level sistemi ayarları (Sadece yöneticiler)', inline: true }
+                                )
+                                .setFooter({ text: 'PudiBot • Level Sistemi', iconURL: client.user.displayAvatarURL({ dynamic: true }) })
+                                .setTimestamp();
+                            break;
+
+                        case 'help_log':
+                            embed = new EmbedBuilder()
+                                .setColor('#3742FA')
+                                .setTitle('📝 Log Sistemi Komutları')
+                                .setDescription('İşte kullanabileceğiniz log sistemi komutları:')
+                                .addFields(
+                                    { name: '🔇 Mute Log', value: '`!mutelog <#kanal>` - Mute log kanalını ayarlar', inline: true },
+                                    { name: '🔨 Ban Log', value: '`!banlog <#kanal>` - Ban log kanalını ayarlar', inline: true },
+                                    { name: '⚠️ Warn Log', value: '`!warnlog <#kanal>` - Warn log kanalını ayarlar', inline: true },
+                                    { name: '💬 Mesaj Log', value: '`!mesajlog ayarla <#kanal>` - Mesaj log kanalını ayarlar', inline: true },
+                                    { name: '🚫 Mesaj Muaf', value: '`!mesajlog muaf-ekle <#kanal>` - Kanalı muaf listesine ekler', inline: true },
+                                    { name: '✅ Mesaj Muaf Kaldır', value: '`!mesajlog muaf-kaldir <#kanal>` - Kanalı muaf listesinden kaldırır', inline: true },
+                                    { name: '📋 Mesaj Muaf Listesi', value: '`!mesajlog muaf-listesi` - Muaf kanalları listeler', inline: true },
+                                    { name: '👋 Gelen/Giden Log', value: '`!gelengidenlog gelen <#kanal>` - Gelen log kanalını ayarlar\n`!gelengidenlog giden <#kanal>` - Giden log kanalını ayarlar', inline: true }
+                                )
+                                .setFooter({ text: 'PudiBot • Log Sistemi', iconURL: client.user.displayAvatarURL({ dynamic: true }) })
+                                .setTimestamp();
+                            break;
+
+                        case 'help_server':
+                            embed = new EmbedBuilder()
+                                .setColor('#2ED573')
+                                .setTitle('⚙️ Sunucu Komutları')
+                                .setDescription('İşte kullanabileceğiniz sunucu komutları:')
+                                .addFields(
+                                    { name: '📊 Sunucu Bilgileri', value: '`!sunucu` veya `!server` - Sunucu bilgilerini gösterir', inline: true }
+                                )
+                                .setFooter({ text: 'PudiBot • Sunucu Komutları', iconURL: client.user.displayAvatarURL({ dynamic: true }) })
+                                .setTimestamp();
+                            break;
+                    }
+
+                    // Geri dön butonu
+                    newButtons = new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setCustomId('help_back')
+                                .setLabel('🔙 Ana Menüye Dön')
+                                .setStyle(ButtonStyle.Secondary)
+                        );
+
+                    await interaction.update({ 
+                        embeds: [embed], 
+                        components: [newButtons] 
+                    });
+                });
+
+                collector.on('end', () => {
+                    // Butonları devre dışı bırak
+                    const disabledButtons = new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setCustomId('help_fun')
+                                .setLabel('🎮 Eğlence')
+                                .setStyle(ButtonStyle.Primary)
+                                .setDisabled(true),
+                            new ButtonBuilder()
+                                .setCustomId('help_mod')
+                                .setLabel('🛡️ Moderasyon')
+                                .setStyle(ButtonStyle.Danger)
+                                .setDisabled(true),
+                            new ButtonBuilder()
+                                .setCustomId('help_level')
+                                .setLabel('📊 Level')
+                                .setStyle(ButtonStyle.Success)
+                                .setDisabled(true),
+                            new ButtonBuilder()
+                                .setCustomId('help_log')
+                                .setLabel('📝 Log')
+                                .setStyle(ButtonStyle.Secondary)
+                                .setDisabled(true),
+                            new ButtonBuilder()
+                                .setCustomId('help_server')
+                                .setLabel('⚙️ Sunucu')
+                                .setStyle(ButtonStyle.Secondary)
+                                .setDisabled(true)
+                        );
+
+                    helpMessage.edit({ components: [disabledButtons] }).catch(() => {});
+                });
                 break;
                 
             default:
