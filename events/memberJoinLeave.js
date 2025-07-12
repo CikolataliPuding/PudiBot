@@ -8,8 +8,10 @@ module.exports = {
             try {
                 // Otorol sistemi
                 const autoRoleId = await getAutoRole(member.guild.id);
+                let autoRole = null;
+                
                 if (autoRoleId) {
-                    const autoRole = member.guild.roles.cache.get(autoRoleId);
+                    autoRole = member.guild.roles.cache.get(autoRoleId);
                     if (autoRole && member.guild.members.me.permissions.has('ManageRoles')) {
                         try {
                             await member.roles.add(autoRole);
@@ -40,12 +42,6 @@ module.exports = {
                             .setFooter({ text: `Hoş geldin ${member.user.username}!`, iconURL: member.guild.iconURL({ dynamic: true }) })
                             .setTimestamp();
 
-                        // Otorol bilgisi ekle
-                        if (autoRoleId && autoRole) {
-                            joinEmbed.addFields(
-                                { name: '🎯 Verilen Rol', value: `${autoRole} (Otorol)`, inline: true }
-                            );
-                        }
 
                         await logChannel.send({ embeds: [joinEmbed] });
                     }
