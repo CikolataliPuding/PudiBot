@@ -39,13 +39,21 @@ module.exports = {
             return message.reply({ embeds: [errorEmbed] });
         }
 
-        // Kullanıcıyı al
-        const targetUser = message.mentions.users.first();
+        // Kullanıcıyı al (mention veya ID)
+        let targetUser = message.mentions.users.first();
+        if (!targetUser) {
+            const userId = args[0];
+            try {
+                targetUser = await message.client.users.fetch(userId);
+            } catch (e) {
+                targetUser = null;
+            }
+        }
         if (!targetUser) {
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('❌ Kullanıcı Bulunamadı')
-                .setDescription('Lütfen atılacak kullanıcıyı etiketleyin!')
+                .setDescription("Lütfen atılacak kullanıcıyı etiketleyin veya geçerli bir kullanıcı ID'si girin!")
                 .setTimestamp();
             return message.reply({ embeds: [errorEmbed] });
         }

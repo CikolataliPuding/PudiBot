@@ -8,8 +8,26 @@ module.exports = {
     async execute(message, args) {
         if (!message.guild) return message.reply('Bu komut sadece sunucularda kullanılabilir.');
         
-        const data = await getLevelData(message.guild.id, message.author.id);
-        const rank = await getUserRank(message.guild.id, message.author.id);
+        // Kullanıcıyı belirle (mention, ID veya kendisi)
+        let targetUser = message.author;
+        if (args.length > 0) {
+            const mentionedUser = message.mentions.users.first();
+            if (mentionedUser) {
+                targetUser = mentionedUser;
+            } else {
+                const userId = args[0];
+                try {
+                    targetUser = await message.client.users.fetch(userId);
+                } catch (e) {
+                    targetUser = null;
+                }
+            }
+        }
+        if (!targetUser) {
+            return message.reply("Lütfen geçerli bir kullanıcıyı etiketleyin veya ID girin!");
+        }
+        const data = await getLevelData(message.guild.id, targetUser.id);
+        const rank = await getUserRank(message.guild.id, targetUser.id);
         
         // Birikimli XP sistemine göre doğru seviye ve ilerleme hesaplama
         let baseXP = 100;
@@ -37,9 +55,9 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor('#FF6B6B')
             .setTitle('🎯 Seviye Bilgileri')
-            .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+            .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
             .addFields(
-                { name: '👤 Kullanıcı', value: `${message.author}`, inline: true },
+                { name: '👤 Kullanıcı', value: `${targetUser}`, inline: true },
                 { name: '🏆 Seviye', value: `**${level}**`, inline: true },
                 { name: '📊 Sıralama', value: `**${rank ? `#${rank}` : 'Yok'}**`, inline: true },
                 { name: '📈 İlerleme', value: `${progressBar} **${Math.round(progress)}%**`, inline: false },

@@ -39,13 +39,19 @@ module.exports = {
             return message.reply({ embeds: [errorEmbed] });
         }
 
-        // Kullanıcı ID'sini al
-        const userId = args[0];
+        // Kullanıcıyı al (mention veya ID)
+        let userId = null;
+        const mentionedUser = message.mentions.users.first();
+        if (mentionedUser) {
+            userId = mentionedUser.id;
+        } else {
+            userId = args[0];
+        }
         if (!/^\d{17,19}$/.test(userId)) {
             const errorEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('❌ Geçersiz Kullanıcı ID')
-                .setDescription('Lütfen geçerli bir kullanıcı ID\'si girin!')
+                .setDescription("Lütfen geçerli bir kullanıcıyı etiketleyin veya kullanıcı ID'si girin!")
                 .setTimestamp();
             return message.reply({ embeds: [errorEmbed] });
         }
