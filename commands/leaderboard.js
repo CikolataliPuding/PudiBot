@@ -23,12 +23,19 @@ module.exports = {
             leaderboardText += `${medal} **${username}**\n└ Seviye: **${leaderboard[i].level}** | XP: **${leaderboard[i].xp}**\n\n`;
         }
         
+        // Kullanıcının bir sonraki seviyeye ulaşması için gereken toplam XP'yi hesapla
+        let baseXP = 100;
+        let requiredTotalXP = 0;
+        for (let i = 1; i <= data.level + 1; i++) {
+            requiredTotalXP += Math.floor(baseXP * Math.pow(1.2, i - 1));
+        }
+        
         const embed = new EmbedBuilder()
             .setColor('#FFD700')
             .setTitle('🏆 Sunucu Level Sıralaması')
             .setDescription(leaderboardText || 'Henüz kimse XP kazanmamış!')
             .addFields(
-                { name: '👤 Senin Bilgilerin', value: `Sıralama: **${rank ? `#${rank}` : 'Yok'}**\nSeviye: **${data.level}**\nXP: **${data.xp}**`, inline: false }
+                { name: '👤 Senin Bilgilerin', value: `Sıralama: **${rank ? `#${rank}` : 'Yok'}**\nSeviye: **${data.level}**\nXP: **${data.xp}**\nSonraki Seviye İçin Gerekli XP: **${requiredTotalXP}**`, inline: false }
             )
             .setThumbnail(message.guild.iconURL({ dynamic: true }))
             .setFooter({ text: `${message.guild.name} • Top 10 Sıralama`, iconURL: message.guild.iconURL({ dynamic: true }) })
