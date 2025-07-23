@@ -381,5 +381,13 @@ process.on('SIGTERM', async () => {
 loadCommands();
 loadEvents();
 
-// Botu başlat
-client.login(token); 
+// Önce veritabanına bağlan, sonra botu başlat
+(async () => {
+    try {
+        await connectToDatabase();
+        client.login(token);
+    } catch (error) {
+        console.error('❌ Veritabanı bağlantısı kurulamadı, bot başlatılmıyor:', error);
+        process.exit(1);
+    }
+})(); 
