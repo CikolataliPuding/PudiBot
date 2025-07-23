@@ -382,12 +382,24 @@ loadCommands();
 loadEvents();
 
 // Önce veritabanına bağlan, sonra botu başlat
+const logErrorToFile = (message) => {
+    const fs = require('fs');
+    const logDir = path.join(__dirname, 'logs');
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir);
+    }
+    const logPath = path.join(logDir, 'error.log');
+    const logMsg = `[${new Date().toISOString()}] ${message}\n`;
+    fs.appendFileSync(logPath, logMsg, 'utf8');
+};
 (async () => {
     try {
         await connectToDatabase();
         client.login(token);
     } catch (error) {
-        console.error('❌ Veritabanı bağlantısı kurulamadı, bot başlatılmıyor:', error);
+        const errMsg = `❌ Veritabanı bağlantısı kurulamadı, bot başlatılmıyor: ${error && error.stack ? error.stack : error}`;
+        console.error(errMsg);
+        logErrorToFile(errMsg);
         process.exit(1);
     }
 })(); 
